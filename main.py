@@ -74,8 +74,8 @@ def main():
 		# Compute Confusion Matrices for both classifiers
 		cm_svm_t = confusion_matrix(y_test, svm_test_predictions)
 		cm_forest_t = confusion_matrix(y_test, forest_test_predictions)
-		cm_svm_t = normalize(cm_svm_t, axis=0, norm='l1')
-		cm_forest_t = normalize(cm_forest_t, axis=0, norm='l1')
+		cm_svm_t = normalize(cm_svm_t, axis=1, norm='l1')
+		cm_forest_t = normalize(cm_forest_t, axis=1, norm='l1')
 		
 		# Plot both confusion matrices (separate windows)
 		fig = plt.figure()
@@ -141,10 +141,33 @@ def main():
 	
 	# Compute confusion matrices for all classifiers
 	cm_svm_v = confusion_matrix(label_ids_v, svm_prediction_v)
-	cm_svm_v = normalize(cm_svm_v, axis=0, norm='l1')
+	cm_svm_v = normalize(cm_svm_v, axis=1, norm='l1')
 	
 	cm_forest_v = confusion_matrix(label_ids_v, forest_prediction_v)
-	cm_forest_v = normalize(cm_forest_v, axis=0, norm='l1')
+	cm_forest_v = normalize(cm_forest_v, axis=1, norm='l1')
+	
+	# Find worst mismatches in Forest classifier
+	n = cm_forest_v.shape[0]
+	mismatches = np.zeros((n,n))
+	matches = np.zeros(n)
+	
+	
+	for r in range(n):
+		for c in range(n):
+			if r == c:
+				matches[r] = cm_forest_v[r,c]
+				continue
+			mismatches[r,c] = cm_forest_v[r,c]
+	
+	# Find and print the most 20 worst mismatches and the 10 worst performing classes
+	mismatches_sorted = np.dstack(np.unravel_index(np.flipud(np.argsort(mismatches.flatten())),(n,n))).reshape(n*n,2)
+	worst_mismatches = [(id_to_name_v[x[0]], id_to_name_v[x[1]], mismatches[x[0],x[1]])  for x in mismatches_sorted[0:20,:]]
+	
+	classes_sorted = np.argsort(matches)
+	worst_classes = [(id_to_name_v[x], matches[x]) for x in classes_sorted[0:10]]
+	print(worst_classes)
+	print('---------------')
+	print(worst_mismatches)
 	
 	# Plot both confusion matrices (separate windows)
 	fig = plt.figure()
